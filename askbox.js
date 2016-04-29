@@ -76,11 +76,11 @@ $(function () {
         if (validateForm(slackUsername, slackMessage)) {
             showNormalMessage("Sending...");
 
-            var newUrl = null;
+            var splitUrl = window.location.href.split("#");
+            var newUrl = splitUrl[0];
+
             // if we have a selection, let's add those params
             if (selectionDetails) {
-                var splitUrl = window.location.href.split("#");
-                newUrl = splitUrl[0];
                 if (newUrl.indexOf("?") == -1) {
                     newUrl += "?abSN=" + encodeURI(selectionDetails.startNode);
                 } else {
@@ -90,10 +90,9 @@ $(function () {
                 newUrl += "&abSO=" + selectionDetails.startOffset;
                 newUrl += "&abEN=" + encodeURI(selectionDetails.endNode);
                 newUrl += "&abEO=" + selectionDetails.endOffset;
-
-                if (splitUrl.length == 2) {
-                    newUrl += "#" + splitUrl[1];
-                }
+            }
+            if (splitUrl.length == 2) {
+                newUrl += "#" + splitUrl[1];
             }
 
             var finalMessage = slackUsername + " asks about <" + newUrl + ">:\n" + slackMessage;
