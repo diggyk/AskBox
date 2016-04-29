@@ -100,7 +100,8 @@ $(function () {
             var json = {
                 username: "AskBox",
                 channel: config.channel,
-                text: finalMessage
+                text: finalMessage,
+                link_names: 1,
             };
 
             $.ajax({
@@ -488,6 +489,18 @@ $(function () {
         });
         $("li:not([id])").each(function() {
             $(this).attr("id", "abLi" + index++);
+        });
+        $("h1:not([id])").each(function() {
+            $(this).attr("id", "abH" + index++);
+        });
+        $("h2:not([id])").each(function() {
+            $(this).attr("id", "abHh" + index++);
+        });
+        $("h3:not([id])").each(function() {
+            $(this).attr("id", "abHhh" + index++);
+        });
+        $("h4:not([id])").each(function() {
+            $(this).attr("id", "abHhhh" + index++);
         });
     }
 
