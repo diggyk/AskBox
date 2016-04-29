@@ -60,6 +60,44 @@ $(function () {
     }
 
     /**
+     * Forms the URL to reference in the message.  If a part of the page has been selected,
+     * we need to add those query params so we can recreate the selection.  Otherwise, the
+     * URL as-is is good enough
+     * @returns {string} the URL to send
+     */
+    function formUrl() {
+        // if we have a selection, let's add those params
+        if (selectionDetails) {
+            var newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+
+            // first, let's get all the search params, if any
+            var params = extractQueryParams();
+
+            // add the query params we want to send along
+            params['abSN'] = selectionDetails.startNode;
+            params['abSO'] = selectionDetails.startOffset;
+            params['abEN'] = selectionDetails.endNode;
+            params['abEO'] = selectionDetails.endOffset;
+
+            // reform the query string
+            var queryString = "";
+            for (var key in params) {
+                queryString += "&" + key + "=" + encodeURI(params[key]);
+            }
+            newUrl += queryString.replace(/^&/, "?");
+
+            if (window.location.hash.length != 0) {
+                newUrl += window.location.hash;
+            }
+
+            return newUrl;
+        } else {
+            console.log(window.location.href);
+            return window.location.href;
+        }
+    }
+
+    /**
      * Send a message to the slack channel.  The message will include the user specified
      * Slack username, the message they typed, and the website's URL.  If the user
      * has selected some text on the page, we'll add query parameters that AskBox
@@ -76,25 +114,7 @@ $(function () {
         if (validateForm(slackUsername, slackMessage)) {
             showNormalMessage("Sending...");
 
-            var splitUrl = window.location.href.split("#");
-            var newUrl = splitUrl[0];
-
-            // if we have a selection, let's add those params
-            if (selectionDetails) {
-                if (newUrl.indexOf("?") == -1) {
-                    newUrl += "?abSN=" + encodeURI(selectionDetails.startNode);
-                } else {
-                     newUrl += "&abSN=" + encodeURI(selectionDetails.startNode);
-                }
-
-                newUrl += "&abSO=" + selectionDetails.startOffset;
-                newUrl += "&abEN=" + encodeURI(selectionDetails.endNode);
-                newUrl += "&abEO=" + selectionDetails.endOffset;
-            }
-            if (splitUrl.length == 2) {
-                newUrl += "#" + splitUrl[1];
-            }
-
+            var newUrl = formUrl();
             var finalMessage = slackUsername + " asks about <" + newUrl + ">:\n" + slackMessage;
             var json = {
                 username: "AskBox",
@@ -426,37 +446,46 @@ $(function () {
     }
 
     /**
-     * In case we got query params of a previous selection, let's recreate
+     * Extract the query param values from the current URL
+     * @returns {{}} hash of query params and values
      */
-    function recreateSelection() {
-        var params = window.location.search.substring(1).split("&");
-        var sn, so, en, eo;
-        for (var i = 0; i < params.length; i++) {
-            var equalIndex = params[i].indexOf("=");
+    function extractQueryParams() {
+        var params = {};
+        if (window.location.search.length == 0) {
+            return params;
+        }
+
+        var paramStrings = window.location.search.substring(1).split("&");
+        for (var i = 0; i < paramStrings.length; i++) {
+            var equalIndex = paramStrings[i].indexOf("=");
             if (equalIndex == -1) {
                 continue;
             }
-            var param = params[i].substring(0, equalIndex);
-            var value = decodeURI(params[i].substring(equalIndex + 1, params[i].length));
-
-            switch (param) {
-                case "abSN":
-                    sn = value;
-                    break;
-                case "abSO":
-                    so = value;
-                    break;
-                case "abEN":
-                    en = value;
-                    break;
-                case "abEO":
-                    eo = value;
-                    break;
-            }
+            var param = paramStrings[i].substring(0, equalIndex);
+            var value = decodeURI(paramStrings[i].substring(equalIndex + 1, paramStrings[i].length));
+            params[param] = value;
         }
+        return params;
+    }
 
-        if (sn && so && en && eo) {
-            selectText(sn, so, en, eo);
+    /**
+     * In case we got query params of a previous selection, let's recreate the
+     * highlight on the current page so the viewer knows what the user had selected
+     */
+    function recreateSelection() {
+        var params = extractQueryParams();
+        if (
+            params.hasOwnProperty("abSN") &&
+            params.hasOwnProperty("abSO") &&
+            params.hasOwnProperty("abEN") &&
+            params.hasOwnProperty("abEO")
+        ) {
+            selectText(
+                params["abSN"],
+                params["abSO"],
+                params["abEN"],
+                params["abEO"]
+            );
         }
     }
 
